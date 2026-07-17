@@ -2,9 +2,9 @@
 
 # 📖 What is TCP?
 
-> **"TCP is a connection-oriented protocol that ensures data is delivered accurately, completely, and in the correct order—even if the network is unreliable."**
+> "TCP is a connection-oriented protocol that ensures data is delivered accurately, completely, and in the correct order—even if the network is unreliable"
 
----
+
 
 # 🎯 Purpose
 
