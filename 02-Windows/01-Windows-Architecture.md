@@ -114,3 +114,675 @@ When investigating an alert, ask yourself:
 
 Understanding these relationships helps you investigate incidents faster and with greater confidence.
 
+---
+
+# 🧩 Core Windows Components Every SOC Analyst Should Know
+
+> **"Attackers rarely attack Windows as a whole—they target specific Windows components."**
+
+---
+
+# 🎯 Why This Matters
+
+Almost every Windows security alert involves one or more core Windows components.
+
+Understanding their purpose helps you quickly determine whether activity is normal or suspicious.
+
+For example:
+
+- A PowerShell alert involves `powershell.exe`.
+- Credential dumping often targets `lsass.exe`.
+- Malware may inject into `explorer.exe`.
+- A new service may be created using the Service Control Manager.
+
+Knowing what these components do is the first step in any investigation.
+
+---
+
+# 🖥️ Windows Components Overview
+
+| Component | Purpose | Why SOC Analysts Care |
+|-----------|----------|-----------------------|
+| User | Interacts with the system | Identify who performed an action |
+| Processes | Running programs | Detect malicious execution |
+| Services | Background applications | Persistence & privilege abuse |
+| Registry | System configuration | Common persistence location |
+| File System | Stores files | Malware, scripts, dropped payloads |
+| Event Logs | Records system activity | Primary investigation source |
+| PowerShell | Automation & scripting | Frequently abused by attackers |
+| Task Scheduler | Automates tasks | Common persistence mechanism |
+
+---
+
+# 👤 Users
+
+Users interact with Windows through accounts.
+
+Examples:
+
+- Local User
+- Domain User
+- Administrator
+- Service Account
+
+During an investigation, always identify:
+
+- Which user executed the action?
+- Was the account expected?
+- Was the account privileged?
+
+Many attacks begin with compromised user credentials.
+
+---
+
+# ⚙️ Processes
+
+A process is simply a running program.
+
+Examples:
+
+```
+chrome.exe
+
+powershell.exe
+
+explorer.exe
+
+notepad.exe
+```
+
+Every application you open creates one or more processes.
+
+SOC analysts spend a significant amount of time investigating process activity because attackers execute malware, scripts, and commands through processes.
+
+---
+
+# 🔄 Services
+
+Services are programs that run in the background.
+
+Unlike normal applications, services can start automatically when Windows boots.
+
+Examples:
+
+- Windows Update
+- Windows Defender
+- Print Spooler
+
+Attackers often create malicious services to maintain persistence after gaining access to a system.
+
+---
+
+# 📝 Registry
+
+The Windows Registry is a central database that stores operating system and application settings.
+
+Attackers frequently abuse registry keys to:
+
+- Maintain persistence
+- Modify security settings
+- Disable protections
+- Execute malware automatically
+
+The Registry is one of the first locations investigators examine during persistence investigations.
+
+---
+
+# 📂 File System
+
+The Windows file system stores:
+
+- Executables
+- DLLs
+- Documents
+- Scripts
+- Logs
+
+SOC analysts commonly investigate:
+
+- Recently created files
+- Suspicious executables
+- Dropped malware
+- Batch scripts
+- PowerShell scripts
+
+---
+
+# 📜 Event Logs
+
+Windows continuously records important system activity.
+
+Examples include:
+
+- User logons
+- Failed logins
+- Process creation
+- Service installation
+- Account changes
+
+These logs are often forwarded to a SIEM where analysts investigate alerts.
+
+---
+
+# 💡 SOC Insight
+
+Most Windows investigations involve answering questions like:
+
+- Which user?
+- Which process?
+- Which service?
+- Which file?
+- Which registry key?
+- Which Event ID?
+
+Understanding these core Windows components provides the context needed to answer those questions.
+---
+
+# ⚙️ Windows Processes - The Heart of Every Investigation
+
+> **"If something happens on Windows, a process is usually responsible for it."**
+
+---
+
+# 🎯 Why This Matters
+
+Almost every SOC investigation begins by identifying **which process** performed an action.
+
+Whether it's:
+
+- Executing malware
+- Running a PowerShell script
+- Connecting to a remote IP
+- Creating a scheduled task
+- Loading a DLL
+- Modifying the Registry
+
+...a process is responsible.
+
+Understanding Windows processes helps analysts quickly separate legitimate activity from suspicious behavior.
+
+---
+
+# 📖 What Is a Process?
+
+A **process** is a running instance of a program.
+
+For example:
+
+```
+Program on Disk
+
+chrome.exe
+
+        ↓
+
+User opens Chrome
+
+        ↓
+
+Running Process
+
+chrome.exe (PID: 4520)
+```
+
+A single program can create multiple processes.
+
+For example, opening multiple Chrome tabs creates multiple `chrome.exe` processes.
+
+---
+
+# 🆔 Process ID (PID)
+
+Every running process is assigned a unique **Process ID (PID)**.
+
+Example:
+
+| Process | PID |
+|----------|-----|
+| explorer.exe | 2580 |
+| chrome.exe | 4520 |
+| powershell.exe | 6812 |
+
+During investigations, the PID helps analysts trace:
+
+- Parent-child relationships
+- Network connections
+- Memory usage
+- Process termination
+- EDR telemetry
+
+---
+
+# 🌳 Parent and Child Processes
+
+Processes can create other processes.
+
+Example:
+
+```
+explorer.exe
+        │
+        └── cmd.exe
+                │
+                └── powershell.exe
+                        │
+                        └── malware.exe
+```
+
+This is known as a **Process Tree**.
+
+One of the first things a SOC analyst should review is:
+
+- Who launched the process?
+- What did it launch next?
+
+Unexpected parent-child relationships often reveal malicious activity.
+
+---
+
+# 🚨 Common Suspicious Examples
+
+| Parent Process | Child Process | Why Investigate? |
+|----------------|---------------|------------------|
+| winword.exe | powershell.exe | Possible malicious Office macro |
+| excel.exe | cmd.exe | Suspicious document execution |
+| outlook.exe | wscript.exe | Email attachment execution |
+| powershell.exe | certutil.exe | Possible payload download |
+| explorer.exe | unknown.exe | Verify if executable is legitimate |
+
+These examples are not always malicious, but they deserve investigation.
+
+---
+
+# 🔍 What Should a SOC Analyst Check?
+
+When investigating a process, ask:
+
+- What is the process name?
+- What is the full file path?
+- Who started it?
+- Which user executed it?
+- What is the parent process?
+- Did it create child processes?
+- Did it make network connections?
+- Is it digitally signed?
+- Does it match normal activity for the host?
+
+Answering these questions often reveals whether a process is benign or malicious.
+
+---
+
+# 💼 Real SOC Scenario
+
+## Alert
+
+An EDR generates an alert:
+
+```
+powershell.exe launched by winword.exe
+```
+
+Initial investigation:
+
+- Parent Process: `WINWORD.EXE`
+- Child Process: `powershell.exe`
+- User opened an email attachment.
+- PowerShell executed an encoded command.
+
+This chain strongly suggests a malicious Office document attempting to execute code.
+
+Instead of focusing only on PowerShell, the analyst investigates the **entire process tree** to understand how the attack began.
+
+---
+
+# 💡 SOC Insight
+
+Process names alone are not enough.
+
+For example:
+
+```
+svchost.exe
+```
+
+may be legitimate...
+
+or malware using the same name from a different folder.
+
+Always verify:
+
+- Full path
+- Digital signature
+- Parent process
+- Command line
+- User context
+---
+
+# 👤 Users & Sessions
+
+> **"Every action on a Windows system is performed in the context of a user session."**
+
+---
+
+# 🎯 Why This Matters
+
+When investigating an alert, one of the first questions should be:
+
+**"Who performed this action?"**
+
+Knowing which user executed a process or logged into a system helps determine whether the activity is legitimate or suspicious.
+
+---
+
+# 👥 Types of User Accounts
+
+Windows commonly uses:
+
+- Local Users
+- Domain Users
+- Administrator Accounts
+- Service Accounts
+
+Each account type has different permissions and should be evaluated during an investigation.
+
+---
+
+# 🖥️ What Is a Session?
+
+A session represents a user's interaction with the operating system after a successful logon.
+
+A session begins when a user logs in and ends when they:
+
+- Log off
+- Disconnect
+- Shut down the system
+
+Everything the user does—opening applications, executing commands, or accessing files—occurs within that session.
+
+---
+
+# 🔍 What Should a SOC Analyst Check?
+
+During an investigation, identify:
+
+- Which user was logged in?
+- Was the account expected on this system?
+- Was the account privileged?
+- Were multiple users logged in simultaneously?
+- Was the logon local or remote?
+
+Unexpected users or unusual logon patterns may indicate compromised credentials or unauthorized access.
+
+---
+
+# 💼 SOC Scenario
+
+An alert shows:
+
+```
+powershell.exe
+```
+
+Before investigating the command itself, determine:
+
+- Which user launched PowerShell?
+- Was the user an administrator?
+- Was the user connected through RDP?
+- Is PowerShell commonly used by this user?
+
+These answers provide valuable context and help determine whether the activity is suspicious.
+
+---
+
+# ⚡ Key Takeaways
+
+- Every process runs under a user account.
+- Every user operates within a session.
+- User context is critical during investigations.
+- Always identify who performed the action before analyzing what they did.
+
+---
+
+# 📂 Common Windows Directories
+
+> **"Knowing where files normally belong helps you recognize when something is out of place."**
+
+---
+
+# 🎯 Why This Matters
+
+Attackers often store malware, scripts, or tools in common Windows directories because they know these locations are frequently used.
+
+As a SOC analyst, you should recognize important directories and know what is normally stored there.
+
+---
+
+# 📁 Important Windows Directories
+
+| Directory | Purpose |
+|-----------|---------|
+| `C:\Windows` | Windows operating system files |
+| `C:\Windows\System32` | Core Windows executables and DLLs |
+| `C:\Program Files` | Installed 64-bit applications |
+| `C:\Program Files (x86)` | Installed 32-bit applications |
+| `C:\Users` | User profiles and personal files |
+| `C:\ProgramData` | Shared application data |
+| `C:\Temp` or `%TEMP%` | Temporary files |
+
+---
+
+# 🔍 What Should a SOC Analyst Check?
+
+During an investigation, pay attention to:
+
+- Executables running from `%TEMP%`
+- Suspicious scripts inside a user's Downloads folder
+- Unknown files in `ProgramData`
+- Unexpected executables in startup locations
+- Processes running from unusual directories
+
+A legitimate Windows process running from the wrong location can be a strong indicator of malicious activity.
+
+---
+
+# 💼 SOC Scenario
+
+An EDR alert shows:
+
+```
+powershell.exe
+
+↓
+
+Downloaded
+
+↓
+
+invoice.exe
+
+↓
+
+C:\Users\John\AppData\Local\Temp\
+```
+
+Questions to ask:
+
+- Why was an executable created in the Temp folder?
+- Who downloaded it?
+- Did it execute?
+- Did it create child processes?
+- Did it establish network connections?
+
+The file location provides valuable context during the investigation.
+
+---
+
+# ⚡ Key Takeaways
+
+- Learn the purpose of common Windows directories.
+- Verify where executables are running from.
+- Temporary folders deserve extra attention during investigations.
+- Always validate whether the file location matches expected behavior.
+
+---
+
+# 🚀 Windows Boot Process (SOC View)
+
+> **"SOC analysts don't need to know every boot stage—they need to know what starts automatically and what attackers can abuse."**
+
+---
+
+# 🎯 Why This Matters
+
+Many persistence techniques rely on programs that automatically execute when Windows starts.
+
+Understanding the basic boot process helps analysts identify:
+
+- Malware that starts during boot.
+- Malicious services.
+- Startup programs.
+- Persistence mechanisms.
+
+---
+
+# 📖 Simplified Boot Process
+
+```
+Power On
+
+↓
+
+Windows Starts
+
+↓
+
+System Services Start
+
+↓
+
+User Logon
+
+↓
+
+Startup Programs Execute
+
+↓
+
+Desktop Loads
+```
+
+This simplified flow is sufficient for most SOC investigations.
+
+---
+
+# 🔍 What Should a SOC Analyst Check?
+
+During investigations involving persistence, verify:
+
+- Were any new services created?
+- Were new startup programs added?
+- Were scheduled tasks created?
+- Were Registry Run keys modified?
+- Did an unknown process start immediately after logon?
+
+These are common techniques used by attackers to regain access after a system reboots.
+
+---
+
+# 💼 SOC Scenario
+
+A user reports that a suspicious application launches every time they sign in.
+
+During the investigation, the analyst discovers:
+
+- A new startup entry was added.
+- The executable launches automatically after user logon.
+- The file was created shortly after a phishing email was opened.
+
+This indicates a persistence mechanism designed to survive system restarts.
+
+---
+
+# ⚡ Key Takeaways
+
+- Windows automatically starts several components during boot.
+- Attackers often abuse startup mechanisms for persistence.
+- Investigate unexpected programs that execute during startup or user logon.
+
+---
+
+# 🔎 Architecture Investigation Tips
+
+> **"Understanding Windows architecture helps you ask better investigation questions."**
+
+---
+
+# 🎯 Investigation Checklist
+
+When investigating a Windows alert, start with these questions:
+
+### 👤 Who?
+
+- Which user performed the action?
+- Was the account expected?
+- Did the user have administrative privileges?
+
+---
+
+### ⚙️ What?
+
+- Which process was executed?
+- What was the parent process?
+- What command line was used?
+
+---
+
+### 📂 Where?
+
+- Where is the executable located?
+- Is the file path normal?
+- Was the file recently created or modified?
+
+---
+
+### 🌐 Did It Communicate?
+
+- Did the process establish network connections?
+- Which IP addresses or domains were contacted?
+- Was the communication expected?
+
+---
+
+### 🛠️ Did It Persist?
+
+Check for common persistence mechanisms such as:
+
+- Services
+- Scheduled Tasks
+- Registry Run Keys
+- Startup Programs
+
+---
+
+# 💼 SOC Example
+
+An alert reports that `powershell.exe` executed on a workstation.
+
+Instead of immediately assuming it's malicious, investigate:
+
+- Which user launched PowerShell?
+- Was it started from `explorer.exe` or `WINWORD.EXE`?
+- Was an encoded command used?
+- Did it create child processes?
+- Did it connect to an external IP?
+- Did it create a scheduled task or service?
+
+Looking at the complete picture helps distinguish legitimate administration from malicious activity.
+
+---
+
+# ⚡ Key Takeaways
+
+- Always investigate the **user**, **process**, **file path**, **network activity**, and **persistence**.
+- A single alert rarely tells the whole story.
+- Correlate multiple artifacts before reaching a conclusion.
