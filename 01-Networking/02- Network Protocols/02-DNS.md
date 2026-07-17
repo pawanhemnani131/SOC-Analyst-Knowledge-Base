@@ -8714,3 +8714,3136 @@ Active Directory DNS
          ├── Threat Hunting
          ├── Detection Engineering
          └── MITRE ATT&CK
+
+---
+
+# 🌐 Split DNS (Split Horizon DNS) - One Domain, Two Different Answers
+
+> **"The same domain can return different IP addresses depending on who is asking."**
+
+---
+
+# 🎯 Purpose
+
+Organizations often need to expose some services to the Internet while keeping others private.
+
+For example,
+
+```
+company.com
+```
+
+should work for:
+
+- Employees inside the office.
+- Employees connected through VPN.
+- Customers on the Internet.
+
+However,
+
+these users should **not** always receive the same DNS response.
+
+This is where **Split DNS** comes into play.
+
+Split DNS allows an organization to return **different DNS records for the same domain** based on where the DNS request originates.
+
+---
+
+# 💡 Real World Analogy
+
+Imagine a large company office.
+
+Employees enter through:
+
+```
+Employee Entrance
+```
+
+Visitors enter through:
+
+```
+Visitor Entrance
+```
+
+Both are entering the same building,
+
+but they receive different access.
+
+Split DNS works similarly.
+
+The same domain is queried,
+
+but different users receive different answers.
+
+---
+
+# 🌍 Example
+
+An employee inside the corporate network queries:
+
+```
+portal.company.com
+```
+
+Internal DNS replies:
+
+```
+10.10.20.15
+```
+
+An external customer queries:
+
+```
+portal.company.com
+```
+
+Public DNS replies:
+
+```
+203.0.113.20
+```
+
+Same domain.
+
+Different IP addresses.
+
+---
+
+# 🏢 Enterprise Example
+
+```
+Employee
+
+↓
+
+Internal DNS
+
+↓
+
+portal.company.com
+
+↓
+
+10.10.20.15
+
+(Private Server)
+```
+
+---
+
+```
+Customer
+
+↓
+
+Public DNS
+
+↓
+
+portal.company.com
+
+↓
+
+203.0.113.20
+
+(Public Web Server)
+```
+
+The employee accesses internal resources.
+
+The customer reaches only the public-facing application.
+
+---
+
+# 🤔 Why Organizations Use Split DNS
+
+Split DNS helps organizations:
+
+- Hide internal infrastructure.
+- Prevent exposure of private IP addresses.
+- Separate internal and external services.
+- Improve security.
+- Simplify internal access.
+- Reduce unnecessary Internet traffic.
+
+---
+
+# 🔴 Red Team Perspective
+
+Attackers often compare:
+
+```
+Internal DNS
+
+vs
+
+External DNS
+```
+
+to identify differences.
+
+If internal DNS accidentally exposes:
+
+- Domain Controllers
+- File Servers
+- Backup Servers
+- Development Systems
+
+the attacker gains valuable reconnaissance data.
+
+Misconfigured Split DNS can leak sensitive infrastructure information.
+
+---
+
+# 🔵 Blue Team Perspective
+
+SOC analysts should investigate:
+
+- Unexpected public exposure of internal hostnames.
+- Differences between internal and external DNS records.
+- Internal DNS queries originating from unauthorized devices.
+- VPN users receiving incorrect DNS responses.
+- DNS misconfigurations after infrastructure changes.
+
+---
+
+# 💼 Real SOC Investigation
+
+## Alert
+
+A penetration test reports:
+
+```
+vpn.company.com
+
+↓
+
+Public DNS
+
+↓
+
+10.10.10.8
+```
+
+Instead of returning a public IP,
+
+the external DNS server leaked a private address.
+
+Although the private IP is unreachable from the Internet,
+
+the attacker now learns:
+
+- Internal addressing scheme.
+- VPN naming convention.
+- Internal network ranges.
+
+The issue is corrected before it can aid further reconnaissance.
+
+---
+
+# 🛡️ Detection Opportunities
+
+Monitor for:
+
+- Internal IP addresses exposed in public DNS.
+- Unauthorized external DNS zone changes.
+- Unexpected differences between internal and external records.
+- DNS misconfigurations after deployments.
+- Public records pointing to internal services.
+
+---
+
+# ❌ Common Mistakes
+
+### Mistake 1
+
+"Split DNS means two different domains."
+
+False.
+
+The domain remains the same.
+
+Only the DNS response changes.
+
+---
+
+### Mistake 2
+
+"Private IP addresses are harmless if exposed."
+
+False.
+
+Even if unreachable,
+
+they reveal valuable information about internal network architecture.
+
+---
+
+# 🎯 MITRE ATT&CK Mapping
+
+Split DNS is a defensive architecture and does **not** directly map to a MITRE ATT&CK technique.
+
+However, misconfigured Split DNS may assist attackers performing:
+
+| Activity | Technique |
+|-----------|-----------|
+| Network Reconnaissance | T1590 |
+| Active Scanning | T1595 |
+| Infrastructure Discovery | T1592 |
+
+---
+
+# 🧪 SOC Investigation Challenge
+
+## Alert
+
+```
+portal.company.com
+
+↓
+
+Internal DNS
+
+↓
+
+10.20.15.25
+
+↓
+
+Public DNS
+
+↓
+
+10.20.15.25
+```
+
+### Investigation Questions
+
+1. Why is a private IP exposed publicly?
+2. Was this caused by a recent DNS change?
+3. Which DNS server hosts the incorrect record?
+4. Are other internal services exposed?
+5. What information could an attacker gain?
+
+---
+
+# ⚡ Quick Revision
+
+✅ Split DNS returns different answers for the same domain.
+
+✅ Internal users typically receive private IP addresses.
+
+✅ External users receive public IP addresses.
+
+✅ Misconfigurations may leak internal infrastructure information.
+
+
+# 🔗 Knowledge Connections
+
+Split DNS
+      │
+      ├── DNS
+      ├── Internal DNS
+      ├── Public DNS
+      ├── VPN
+      ├── DNS Zones
+      ├── Network Segmentation
+      ├── Active Directory
+      ├── Threat Hunting
+      └── Incident Response
+---
+
+# 📜 DNS Logging - The First Clue in Many Cyber Attacks
+
+> **"Attackers can hide their malware, encrypt their traffic, and obfuscate their payloads—but almost every attack still needs DNS."**
+
+---
+
+# 🎯 Purpose
+
+Every time a device resolves a domain name,
+
+a DNS server may generate a log entry.
+
+These logs tell us:
+
+- Who made the request
+- When it happened
+- What domain was queried
+- Which DNS server answered
+- Whether the lookup succeeded or failed
+
+For SOC analysts,
+
+DNS logs are often the **first indicator of compromise (IOC)**.
+
+Many attacks begin with DNS long before malware is downloaded or credentials are stolen.
+
+---
+
+# 🌍 Why DNS Logs Matter
+
+Imagine a phishing attack.
+
+```
+User Opens Email
+
+↓
+
+Clicks Link
+
+↓
+
+Laptop Queries
+
+login-microsoft-support[.]com
+
+↓
+
+DNS Resolves Domain
+
+↓
+
+Malicious Website Opens
+```
+
+Even if the attacker later deletes the phishing website,
+
+the DNS log remains.
+
+It becomes valuable forensic evidence.
+
+---
+
+# 💡 Real World Analogy
+
+Imagine a receptionist at a company.
+
+Every visitor signs a register before entering.
+
+Months later,
+
+even if the visitor has left,
+
+the register still contains:
+
+- Name
+- Time
+- Date
+- Purpose of visit
+
+DNS logs work in the same way.
+
+They record which domains systems attempted to visit.
+
+---
+
+# 📝 What Does a DNS Log Contain?
+
+Although formats vary between products,
+
+most DNS logs include:
+
+| Field | Description |
+|--------|-------------|
+| Timestamp | When the query occurred |
+| Client IP | Device making the request |
+| Queried Domain | Domain being resolved |
+| Record Type | A, AAAA, MX, TXT, SRV, etc. |
+| Response Code | Success or Failure |
+| DNS Server | Resolver handling the request |
+| Response IP | Returned IP Address |
+
+These fields allow analysts to reconstruct user and malware activity.
+
+---
+
+# 🏢 Enterprise Example
+
+Employee opens a browser.
+
+```
+Laptop
+
+↓
+
+DNS Query
+
+github.com
+
+↓
+
+DNS Server
+
+↓
+
+Log Generated
+```
+
+Sample log:
+
+```
+Time:
+09:42:31
+
+Client:
+10.20.15.44
+
+Query:
+github.com
+
+Record:
+A
+
+Response:
+140.82.121.4
+
+Status:
+NOERROR
+```
+
+Simple.
+
+But incredibly valuable.
+
+---
+
+# 🔴 Red Team Perspective
+
+Attackers know defenders rely on DNS logs.
+
+To reduce visibility,
+
+they may:
+
+- Use Domain Generation Algorithms (DGA)
+- Use DNS over HTTPS (DoH)
+- Register short-lived domains
+- Rotate infrastructure frequently
+- Use cloud providers
+- Use compromised legitimate domains
+
+Even then,
+
+DNS activity often leaves useful traces.
+
+---
+
+# 🦠 Malware Example
+
+Malware starts.
+
+```
+↓
+
+DNS Query
+
+↓
+
+cdn-update-storage[.]xyz
+
+↓
+
+IP Returned
+
+↓
+
+HTTPS Connection
+
+↓
+
+Payload Downloaded
+```
+
+The DNS request happened **before** the malware download.
+
+An analyst reviewing logs can reconstruct the entire timeline.
+
+---
+
+# 🔵 Blue Team Perspective
+
+SOC analysts use DNS logs to identify:
+
+- Malware communication
+- Phishing domains
+- Command & Control servers
+- Beaconing activity
+- DNS tunneling
+- Data exfiltration
+- Newly registered domains
+- DGA-generated domains
+- Suspicious TXT requests
+
+DNS logs often answer the question:
+
+> **"What was the system trying to reach?"**
+
+---
+
+# 💼 Real SOC Investigation
+
+## Alert
+
+EDR reports:
+
+```
+powershell.exe
+
+↓
+
+Unknown Network Activity
+```
+
+Firewall logs show:
+
+```
+Outbound HTTPS
+
+↓
+
+185.xxx.xxx.xxx
+```
+
+The IP has no hostname.
+
+DNS logs reveal:
+
+```
+powershell.exe
+
+↓
+
+cdn-security-check[.]xyz
+
+↓
+
+Resolved
+
+↓
+
+185.xxx.xxx.xxx
+```
+
+Threat Intelligence identifies the domain as malicious.
+
+Without DNS logs,
+
+the analyst would only have an IP address.
+
+---
+
+# 📊 Common DNS Log Sources
+
+SOC teams commonly collect DNS logs from:
+
+- Windows DNS Server
+- BIND DNS
+- Microsoft Defender
+- Sysmon (Event ID 22)
+- Zeek
+- Infoblox
+- Cisco Umbrella
+- Cloudflare Gateway
+- AWS Route 53 Resolver Logs
+- Azure DNS Analytics
+
+Each source provides different levels of visibility.
+
+---
+
+# 🖥️ Sysmon Event ID 22
+
+One of the most useful Windows events.
+
+It records:
+
+- Process Name
+- Process ID
+- User
+- Queried Domain
+- Query Result
+
+Example:
+
+```
+Image
+
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+
+↓
+
+Query
+
+evil-update.xyz
+
+↓
+
+Result
+
+203.0.113.55
+```
+
+Now you know **which process** performed the DNS lookup.
+
+That is incredibly valuable during investigations.
+
+---
+
+# 📡 Zeek DNS Logs
+
+Zeek captures rich DNS telemetry including:
+
+- Query
+- Response
+- Record Type
+- TTL
+- Client
+- Server
+- Transaction ID
+
+Unlike Windows DNS logs,
+
+Zeek observes traffic directly from the network.
+
+---
+
+# 🛡️ Detection Engineering
+
+Create alerts for:
+
+- Newly registered domains
+- High-entropy domains
+- Long DNS queries
+- TXT record abuse
+- DNS queries from PowerShell
+- DNS queries from Office applications
+- Excessive NXDOMAIN responses
+- Rare domains contacted by multiple endpoints
+
+The best detections combine DNS logs with endpoint telemetry.
+
+---
+
+# ❌ Common Mistakes
+
+### Mistake 1
+
+"DNS logs only help network teams."
+
+False.
+
+SOC analysts, DFIR investigators, malware analysts, and threat hunters all rely heavily on DNS logs.
+
+---
+
+### Mistake 2
+
+"If HTTPS is encrypted, DNS logs are useless."
+
+False.
+
+Even when web traffic is encrypted,
+
+DNS often reveals **where** the endpoint intended to connect.
+
+---
+
+### Mistake 3
+
+"Only malicious domains appear in DNS logs."
+
+False.
+
+The vast majority of DNS traffic is legitimate.
+
+The analyst's job is to identify the small percentage that is suspicious.
+
+---
+
+# 🎯 MITRE ATT&CK Mapping
+
+DNS logging is a defensive capability rather than an attack technique.
+
+However, it is invaluable for detecting techniques such as:
+
+| Activity | Technique |
+|-----------|-----------|
+| DNS Command & Control | T1071.004 |
+| DNS Tunneling | T1071.004 / T1048 |
+| Dynamic Resolution | T1568 |
+| Phishing Infrastructure | Context Dependent |
+| Malware Beaconing | T1071 |
+
+---
+
+# 🧪 SOC Investigation Challenge
+
+## Alert
+
+```
+Host
+
+↓
+
+ACCOUNTS-PC-08
+
+↓
+
+powershell.exe
+
+↓
+
+DNS Query
+
+↓
+
+update-microsoft365-login[.]xyz
+
+↓
+
+Resolved
+
+↓
+
+HTTPS Connection
+
+↓
+
+Unknown Executable Downloaded
+```
+
+### Investigation Questions
+
+1. Which process performed the DNS lookup?
+2. Is the domain newly registered?
+3. Has any other endpoint queried the same domain?
+4. What was downloaded?
+5. Did execution occur?
+6. Was persistence established?
+7. Which logs would you correlate?
+8. Does Threat Intelligence flag the domain?
+9. Which MITRE ATT&CK techniques apply?
+10. Should the endpoint be isolated?
+
+---
+
+# ⚡ Quick Revision
+
+✅ DNS logs record domain resolution activity.
+
+✅ They often provide the earliest evidence of an attack.
+
+✅ DNS logs become significantly more powerful when combined with Sysmon, Zeek, firewall logs, EDR, and Threat Intelligence.
+
+✅ Understanding DNS telemetry is a core skill for every SOC analyst.
+
+# 🔗 Knowledge Connections
+
+DNS Logging
+      │
+      ├── DNS
+      ├── Sysmon Event ID 22
+      ├── Zeek
+      ├── Splunk
+      ├── Sigma
+      ├── Threat Hunting
+      ├── Malware Analysis
+      ├── Incident Response
+      ├── EDR
+      ├── Firewall Logs
+      └── MITRE ATT&CK
+---
+
+# 🎯 Threat Hunting with DNS - Hunting Attackers Before They Strike
+
+> **"Alerts tell you what is already suspicious. Threat hunting is about finding what no one has detected yet."**
+
+---
+
+# 🎯 Purpose
+
+Until now, we've learned:
+
+- How DNS works.
+- How attackers abuse DNS.
+- What DNS logs contain.
+
+Now it's time to answer the most important question:
+
+> **How does a SOC analyst use DNS to proactively hunt for threats?**
+
+Threat hunting is different from incident response.
+
+In incident response:
+
+```
+Alert
+
+↓
+
+Investigation
+
+↓
+
+Response
+```
+
+In threat hunting:
+
+```
+No Alert
+
+↓
+
+Analyst Searches For Suspicious Activity
+
+↓
+
+Potential Threat Discovered
+```
+
+The goal is to identify malicious behavior before automated security tools generate an alert.
+
+---
+
+# 💡 Real World Analogy
+
+Imagine you're a detective.
+
+Waiting for someone to report a crime is **reactive**.
+
+Walking through a neighborhood, identifying suspicious behavior before a crime occurs is **proactive**.
+
+Threat hunting follows the same principle.
+
+Instead of waiting for alerts,
+
+SOC analysts actively search through logs looking for hidden attacker activity.
+
+---
+
+# 🌍 Why DNS is Excellent for Threat Hunting
+
+Almost every cyber attack needs DNS.
+
+Examples include:
+
+```
+Phishing Website
+
+↓
+
+DNS Lookup
+```
+
+---
+
+```
+Malware Download
+
+↓
+
+DNS Lookup
+```
+
+---
+
+```
+Command & Control
+
+↓
+
+DNS Lookup
+```
+
+---
+
+```
+Data Exfiltration
+
+↓
+
+DNS Lookup
+```
+
+---
+
+```
+Cloud Service Abuse
+
+↓
+
+DNS Lookup
+```
+
+If an attacker needs to communicate,
+
+DNS is often involved.
+
+---
+
+# 🔍 What Can You Hunt For?
+
+DNS logs can reveal:
+
+- Phishing domains
+- Malware downloads
+- Command & Control servers
+- DNS Tunneling
+- Beaconing
+- Newly Registered Domains (NRDs)
+- Domain Generation Algorithms (DGA)
+- Fast Flux infrastructure
+- Rare domains
+- Unusual TXT record usage
+- Excessive NXDOMAIN responses
+
+Each of these can become a hunting hypothesis.
+
+---
+
+# 🏢 Enterprise Example
+
+Imagine an organization with:
+
+```
+2,000 Employees
+
+↓
+
+350,000 DNS Queries Per Day
+```
+
+Most queries are expected:
+
+```
+microsoft.com
+
+google.com
+
+github.com
+
+office.com
+```
+
+One endpoint, however, repeatedly queries:
+
+```
+kd82js91-update-service.xyz
+```
+
+No alert exists.
+
+But a threat hunter notices:
+
+- The domain has never been seen before.
+- Only one endpoint communicates with it.
+- The domain is newly registered.
+- Queries occur every 45 seconds.
+
+This becomes the starting point of an investigation.
+
+---
+
+# 🔴 Red Team Perspective
+
+Attackers attempt to blend into normal DNS traffic by:
+
+- Registering domains that resemble trusted brands.
+- Using cloud-hosted infrastructure.
+- Rotating domains frequently.
+- Randomizing beacon intervals.
+- Encrypting subsequent traffic.
+- Using DNS over HTTPS (DoH).
+
+Their objective is to avoid standing out in DNS telemetry.
+
+---
+
+# 🔵 Blue Team Perspective
+
+A DNS hunter asks questions such as:
+
+- Which domains are completely new?
+- Which endpoints contact rare domains?
+- Which domains generate repeated TXT requests?
+- Which systems produce excessive NXDOMAIN responses?
+- Which endpoints beacon at regular intervals?
+- Which users contact known malicious infrastructure?
+
+Rather than focusing on a single event, the hunter looks for behavioral patterns.
+
+---
+
+# 💼 Hunting Scenario
+
+Imagine you review DNS logs for the last 24 hours.
+
+You discover:
+
+```
+Host
+
+↓
+
+HR-LAPTOP-07
+
+↓
+
+Queried Domain
+
+↓
+
+microsoft-login-security-update.xyz
+
+↓
+
+Query Count
+
+184
+
+↓
+
+First Seen
+
+Today
+
+↓
+
+Domain Age
+
+1 Day
+```
+
+No security alert has fired.
+
+However, several characteristics are suspicious:
+
+- Newly registered domain.
+- Brand impersonation.
+- High query frequency.
+- Single affected endpoint.
+
+This is enough to begin a deeper investigation.
+
+---
+
+# 🛡️ Hunting Hypothesis
+
+A threat hunt usually begins with a hypothesis.
+
+Example:
+
+> "Attackers often use newly registered domains for phishing and malware delivery."
+
+The analyst then searches DNS logs to validate or reject that hypothesis.
+
+Good threat hunting is driven by questions—not assumptions.
+
+---
+
+# ❌ Common Mistakes
+
+### Mistake 1
+
+"Threat hunting only starts after an alert."
+
+False.
+
+Threat hunting is proactive.
+
+Its purpose is to discover attacks before automated detections do.
+
+---
+
+### Mistake 2
+
+"If a domain isn't on a blocklist, it's safe."
+
+False.
+
+Many malicious domains are used within hours of registration—before they appear in threat intelligence feeds.
+
+---
+
+### Mistake 3
+
+"One unusual DNS query confirms malware."
+
+False.
+
+A single event rarely proves compromise.
+
+Always correlate with:
+
+- Endpoint telemetry.
+- Process execution.
+- Firewall logs.
+- Proxy logs.
+- Threat intelligence.
+- User activity.
+
+---
+
+# 🎯 MITRE ATT&CK Mapping
+
+DNS hunting can help identify techniques including:
+
+| Activity | Technique |
+|-----------|-----------|
+| DNS Command & Control | T1071.004 |
+| Dynamic Resolution | T1568 |
+| Phishing Infrastructure | T1583 |
+| Data Exfiltration | T1048 |
+| Active Scanning | T1595 |
+
+---
+
+# 🧪 SOC Investigation Challenge
+
+## Scenario
+
+Your organization generated:
+
+```
+410,000 DNS Queries
+
+↓
+
+Last 24 Hours
+```
+
+You notice one endpoint contacting:
+
+```
+update-office365-secure.xyz
+```
+
+Every 50 seconds.
+
+No alert exists.
+
+### Investigation Questions
+
+1. Is the domain newly registered?
+2. Which process initiated the DNS requests?
+3. Has any other endpoint contacted the same domain?
+4. Does the endpoint show signs of beaconing?
+5. Is the domain associated with known threat intelligence?
+6. Are HTTPS connections occurring after the DNS lookups?
+7. Is this normal application behavior?
+8. Which additional telemetry would you collect?
+
+---
+
+# ⚡ Quick Revision
+
+✅ Threat hunting is proactive, not reactive.
+
+✅ DNS is one of the richest data sources for threat hunting.
+
+✅ Look for patterns rather than isolated events.
+
+✅ Always validate findings using multiple telemetry sources.
+
+# 🔗 Knowledge Connections
+
+Threat Hunting
+      │
+      ├── DNS Logs
+      ├── Sysmon
+      ├── Zeek
+      ├── EDR
+      ├── Threat Intelligence
+      ├── Beaconing
+      ├── DNS Tunneling
+      ├── Malware
+      ├── Splunk
+      └── MITRE ATT&CK
+---
+
+# 🔎 Hunting Newly Registered Domains (NRDs) - Catching Attacks in Their Early Stages
+
+> **"Many cyber attacks begin with a brand-new domain that has never been seen before."**
+
+---
+
+# 🎯 Purpose
+
+One of the simplest and most effective threat hunting techniques is identifying **Newly Registered Domains (NRDs).**
+
+Attackers frequently register new domains because:
+
+- Their old infrastructure has been blocked.
+- They need fresh phishing websites.
+- They need a new Command & Control (C2) server.
+- They want to evade reputation-based security products.
+
+Since these domains are new,
+
+they often have:
+
+- No reputation.
+- Very little historical activity.
+- Few detections from antivirus vendors.
+
+For this reason, NRDs deserve extra attention during investigations.
+
+---
+
+# 💡 Real World Analogy
+
+Imagine someone opens a brand-new bank account today.
+
+Within one hour,
+
+millions of rupees are transferred through it.
+
+Wouldn't that seem suspicious?
+
+The account itself isn't malicious,
+
+but because it has **no history**, it deserves investigation.
+
+Newly registered domains are similar.
+
+They aren't automatically malicious,
+
+but attackers often abuse them before defenders have time to classify them.
+
+---
+
+# 🌍 What is a Newly Registered Domain?
+
+Example:
+
+```
+microsoft-support-login.xyz
+```
+
+Registered:
+
+```
+Today
+```
+
+First DNS Query:
+
+```
+15 Minutes Later
+```
+
+Employees begin visiting it.
+
+This should immediately attract a SOC analyst's attention.
+
+---
+
+# 🤔 Why Attackers Prefer NRDs
+
+Attackers frequently lose infrastructure because defenders:
+
+- Block malicious domains.
+- Share Indicators of Compromise (IOCs).
+- Update threat intelligence feeds.
+- Suspend phishing websites.
+
+To continue operating,
+
+they simply register another domain.
+
+Example:
+
+```
+login-company-support.xyz
+
+↓
+
+Blocked
+```
+
+↓
+
+```
+secure-company-login.xyz
+
+↓
+
+Blocked
+```
+
+↓
+
+```
+company-authentication-help.xyz
+
+↓
+
+Campaign Continues
+```
+
+This constant rotation makes NRDs a common indicator during phishing campaigns.
+
+---
+
+# 🦠 Real Malware Example
+
+Imagine a threat actor launches a ransomware campaign.
+
+Step 1
+
+```
+Register Domain
+
+↓
+
+files-update-secure.xyz
+```
+
+Step 2
+
+```
+Configure DNS
+
+↓
+
+Create HTTPS Website
+```
+
+Step 3
+
+```
+Send Phishing Emails
+```
+
+Step 4
+
+```
+Victim Clicks Link
+```
+
+Step 5
+
+```
+DNS Query
+
+↓
+
+Website Opens
+
+↓
+
+Malware Download
+```
+
+The domain may only be **two hours old**.
+
+---
+
+# 🔴 Red Team Perspective
+
+Attackers choose NRDs because they:
+
+- Avoid existing blocklists.
+- Blend into Internet traffic.
+- Replace infrastructure quickly.
+- Launch short-lived phishing campaigns.
+- Host malware for only a few hours.
+
+Many domains are abandoned before defenders even finish their investigation.
+
+---
+
+# 🔵 Blue Team Perspective
+
+Not every NRD is malicious.
+
+Many legitimate businesses register new domains every day.
+
+Instead of blocking every NRD,
+
+analysts should investigate factors such as:
+
+- Domain age.
+- WHOIS information.
+- Registrar reputation.
+- Hosting provider.
+- SSL certificate details.
+- Number of affected endpoints.
+- Associated IP reputation.
+- Threat intelligence results.
+
+Always use multiple indicators before making a conclusion.
+
+---
+
+# 💼 Real SOC Investigation
+
+## Alert
+
+DNS Logs
+
+```
+Client
+
+↓
+
+HR-LAPTOP-12
+
+↓
+
+Query
+
+↓
+
+office365-security-update.xyz
+
+↓
+
+First Seen
+
+Today
+
+↓
+
+Domain Age
+
+3 Hours
+```
+
+Threat Intelligence
+
+```
+No Reputation Available
+```
+
+WHOIS
+
+```
+Registered
+
+Today
+```
+
+EDR
+
+```
+chrome.exe
+
+↓
+
+Downloaded
+
+invoice.pdf.exe
+```
+
+The analyst determines that the DNS request led to a phishing website distributing malware.
+
+---
+
+# 🛡️ Detection Engineering
+
+Create detections for:
+
+- Domains registered within the last 30 days.
+- Brand impersonation domains.
+- Newly observed domains contacted by multiple endpoints.
+- NRDs followed by executable downloads.
+- NRDs contacted outside business hours.
+- NRDs resolving to infrastructure with poor reputation.
+
+These detections should be enriched with threat intelligence whenever possible.
+
+---
+
+# 🚨 Detection Opportunities
+
+Investigate when you observe:
+
+- A domain first seen in your environment.
+- Multiple users contacting the same new domain.
+- New domains combined with PowerShell activity.
+- NRDs followed by Office macro execution.
+- Downloads immediately after DNS resolution.
+
+The combination of events is often more important than the domain age alone.
+
+---
+
+# ❌ Common Mistakes
+
+### Mistake 1
+
+"Every newly registered domain is malicious."
+
+False.
+
+Many are completely legitimate.
+
+Treat NRDs as a signal for investigation—not automatic evidence of compromise.
+
+---
+
+### Mistake 2
+
+"If VirusTotal shows no detections, the domain is safe."
+
+False.
+
+Brand-new domains often have no detections because they haven't been analyzed yet.
+
+---
+
+### Mistake 3
+
+"I should block every NRD."
+
+False.
+
+Doing so would generate many false positives.
+
+Use additional context before taking action.
+
+---
+
+# 🎯 MITRE ATT&CK Mapping
+
+| Activity | Technique |
+|-----------|-----------|
+| Phishing Infrastructure | T1583 |
+| Command & Control | T1071 |
+| Malware Delivery | Context Dependent |
+| Resource Development | T1583 |
+
+---
+
+# 🧪 SOC Investigation Challenge
+
+## Scenario
+
+DNS Logs show:
+
+```
+Host
+
+↓
+
+FINANCE-PC-04
+
+↓
+
+Query
+
+↓
+
+secure-payroll-portal.xyz
+
+↓
+
+First Seen
+
+Today
+
+↓
+
+Domain Age
+
+6 Hours
+
+↓
+
+HTTPS Connection
+
+↓
+
+Executable Download
+```
+
+### Investigation Questions
+
+1. Who registered the domain?
+2. Which user visited it?
+3. Was the download executed?
+4. Are other endpoints contacting the domain?
+5. Does the SSL certificate appear suspicious?
+6. Is the hosting provider associated with previous abuse?
+7. What additional telemetry should be reviewed?
+8. Should the domain be blocked immediately?
+
+---
+
+# ⚡ Quick Revision
+
+✅ Newly Registered Domains (NRDs) are frequently used in phishing, malware delivery, and C2 infrastructure.
+
+✅ A new domain is **not automatically malicious**, but it deserves additional scrutiny.
+
+✅ Combine DNS logs with WHOIS, Threat Intelligence, EDR, proxy logs, and user activity.
+
+✅ Context is more important than domain age alone.
+
+
+# 🔗 Knowledge Connections
+Newly Registered Domains
+            │
+            ├── DNS Logs
+            ├── WHOIS
+            ├── Threat Intelligence
+            ├── Phishing
+            ├── Malware
+            ├── Command & Control
+            ├── EDR
+            ├── Proxy Logs
+            ├── Threat Hunting
+            └── MITRE ATT&CK
+
+---
+
+# 🎲 Domain Generation Algorithms (DGA) - Malware That Creates Its Own Domains
+
+> **"If defenders block one malicious domain, attackers simply generate thousands of new ones."**
+
+---
+
+# 🎯 Purpose
+
+Many malware families rely on a **Command & Control (C2)** server to receive instructions.
+
+In the early days, malware contacted a single hardcoded domain.
+
+Example:
+
+```
+malware-control.com
+```
+
+If defenders blocked or seized that domain,
+
+the malware lost communication with its operator.
+
+To solve this problem, attackers developed **Domain Generation Algorithms (DGAs).**
+
+Instead of relying on one domain,
+
+the malware automatically generates hundreds or even thousands of domain names every day.
+
+The attacker only needs to register **one** of those generated domains.
+
+The malware eventually finds it and reconnects to the C2 server.
+
+---
+
+# 💡 Real World Analogy
+
+Imagine you and a friend agree to meet every day,
+
+but you don't know the exact location.
+
+Instead,
+
+both of you have the same secret notebook that lists:
+
+```
+Day 1 → Coffee Shop A
+
+Day 2 → Park B
+
+Day 3 → Library C
+
+Day 4 → Restaurant D
+```
+
+Neither of you needs to communicate beforehand.
+
+As long as you both have the same notebook,
+
+you'll meet successfully.
+
+A DGA works the same way.
+
+The attacker and the malware use the same algorithm to independently generate identical domain names.
+
+---
+
+# 🌍 How DGA Works
+
+Step 1
+
+The malware uses inputs such as:
+
+- Current date
+- Current time
+- Seed value
+- Secret key
+- Mathematical algorithm
+
+↓
+
+Step 2
+
+It generates a list of possible domains.
+
+Example:
+
+```
+abjskdqw.xyz
+
+↓
+
+kjdhwuep.biz
+
+↓
+
+pqowmxla.net
+
+↓
+
+jdiwmske.org
+
+↓
+
+...
+```
+
+↓
+
+Step 3
+
+The malware queries each domain through DNS.
+
+↓
+
+Step 4
+
+Only one of those domains has been registered by the attacker.
+
+↓
+
+Step 5
+
+The malware successfully establishes communication with the C2 server.
+
+---
+
+# 🏢 Enterprise Example
+
+A workstation becomes infected.
+
+Every morning at 9:00 AM,
+
+it generates 500 domain names.
+
+DNS logs show:
+
+```
+hskd82kd.com
+
+↓
+
+mxpq912.org
+
+↓
+
+ajqkw921.net
+
+↓
+
+pqozk212.xyz
+
+↓
+
+...
+```
+
+Eventually,
+
+one domain resolves successfully.
+
+The malware downloads new instructions.
+
+---
+
+# 🤔 Why Attackers Use DGA
+
+DGAs provide several advantages:
+
+- Eliminate reliance on a single domain.
+- Make infrastructure takedowns more difficult.
+- Reduce dependence on fixed IP addresses.
+- Increase malware resilience.
+- Complicate threat intelligence efforts.
+
+Even if defenders block 499 domains,
+
+the attacker only needs one working domain.
+
+---
+
+# 🦠 Real Malware Examples
+
+Several well-known malware families have used DGAs, including:
+
+| Malware | DGA Usage |
+|----------|-----------|
+| Conficker | Generated hundreds of domains daily |
+| Locky | Used DGA for ransomware infrastructure |
+| Kraken | Rotated C2 domains dynamically |
+| Matsnu | Large-scale DGA implementation |
+| Ramnit | Frequently changed C2 domains |
+
+Each family implemented its own algorithm,
+
+but the objective remained the same:
+
+**Maintain reliable communication with the attacker.**
+
+---
+
+# 🔴 Red Team Perspective
+
+Although many penetration testing frameworks do not implement DGAs by default,
+
+real threat actors value them because they:
+
+- Survive domain takedowns.
+- Bypass static blocklists.
+- Make attribution harder.
+- Allow rapid infrastructure rotation.
+
+Modern malware often combines DGAs with HTTPS and encrypted C2 channels.
+
+---
+
+# 🔵 Blue Team Perspective
+
+SOC analysts should watch for:
+
+- Large numbers of failed DNS queries.
+- Random-looking domain names.
+- High domain entropy.
+- Domains with no browsing history.
+- Repeated NXDOMAIN responses.
+- Hundreds of unique domains queried by one endpoint.
+
+These behaviors often indicate automated domain generation rather than normal user activity.
+
+---
+
+# 💼 Real SOC Investigation
+
+## Alert
+
+DNS monitoring identifies:
+
+```
+Endpoint
+
+↓
+
+ENG-LAPTOP-09
+
+↓
+
+1,240 DNS Queries
+
+↓
+
+Within 15 Minutes
+
+↓
+
+1,215 Returned NXDOMAIN
+```
+
+Most queried domains appear random:
+
+```
+jqpwke91.net
+
+↓
+
+mxqaz812.org
+
+↓
+
+pkdwls92.xyz
+```
+
+The remaining 25 domains resolve successfully.
+
+Threat intelligence identifies one of them as malware infrastructure.
+
+The endpoint is isolated before additional payloads are delivered.
+
+---
+
+# 🛡️ Detection Engineering
+
+Create detections for:
+
+- Excessive NXDOMAIN responses.
+- High-entropy domain names.
+- Hundreds of unique domains queried by one host.
+- Short-lived domains with random naming patterns.
+- Automated DNS requests at high frequency.
+- Rare domains queried immediately after PowerShell execution.
+
+Combining DNS telemetry with endpoint activity significantly improves detection accuracy.
+
+---
+
+# 🚨 Detection Opportunities
+
+Investigate systems that show:
+
+- Unusually high DNS query volume.
+- Sequential random-looking domains.
+- Queries with no corresponding user browsing activity.
+- PowerShell or scripts immediately followed by DNS bursts.
+- DGA patterns occurring at regular intervals.
+
+Behavioral analysis is often more effective than relying solely on threat intelligence.
+
+---
+
+# ❌ Common Mistakes
+
+### Mistake 1
+
+"Random-looking domains are always malicious."
+
+False.
+
+Some legitimate services generate unique subdomains or tracking identifiers.
+
+Context is essential.
+
+---
+
+### Mistake 2
+
+"If one DGA domain is blocked, the malware is stopped."
+
+False.
+
+The malware simply generates additional domains.
+
+The underlying infection must still be remediated.
+
+---
+
+### Mistake 3
+
+"Threat intelligence alone is enough."
+
+False.
+
+Many DGA domains are generated faster than threat intelligence feeds can classify them.
+
+Behavioral detection remains critical.
+
+---
+
+# 🎯 MITRE ATT&CK Mapping
+
+| Activity | Technique |
+|-----------|-----------|
+| Dynamic Resolution | **T1568.002 – Domain Generation Algorithms** |
+| Command & Control | **T1071.004 – DNS** |
+| Encrypted C2 | **T1573** |
+
+---
+
+# 🧪 SOC Investigation Challenge
+
+## Scenario
+
+DNS logs reveal:
+
+```
+Host
+
+↓
+
+DEV-PC-22
+
+↓
+
+2,500 DNS Queries
+
+↓
+
+2,430 NXDOMAIN Responses
+
+↓
+
+Several Random Domains
+
+↓
+
+One Successful Resolution
+
+↓
+
+HTTPS Connection Established
+```
+
+### Investigation Questions
+
+1. Does the domain naming pattern resemble a DGA?
+2. Which process generated the DNS queries?
+3. Is there evidence of malware execution?
+4. Was a payload downloaded after the successful resolution?
+5. Do other endpoints show the same pattern?
+6. Is the successful domain present in threat intelligence?
+7. Which logs should be correlated next?
+8. Should the endpoint be isolated?
+
+---
+
+# ⚡ Quick Revision
+
+✅ DGAs allow malware to generate thousands of potential domains automatically.
+
+✅ The attacker only needs to register one generated domain.
+
+✅ Large numbers of NXDOMAIN responses and random-looking domains are common indicators.
+
+✅ Behavioral detection is more effective than relying only on domain reputation.
+
+# 🔗 Knowledge Connections
+
+Domain Generation Algorithms
+             │
+             ├── DNS
+             ├── Command & Control
+             ├── Malware
+             ├── Threat Hunting
+             ├── NXDOMAIN
+             ├── Threat Intelligence
+             ├── Beaconing
+             ├── Sysmon
+             ├── Splunk
+             └── MITRE ATT&CK
+---
+
+# 🌪️ Fast Flux DNS - One Domain, Hundreds of IP Addresses
+
+> **"Instead of changing the domain, attackers constantly change the IP addresses behind it."**
+
+---
+
+# 🎯 Purpose
+
+One of the biggest challenges for defenders is blocking malicious infrastructure.
+
+Imagine you discover:
+
+```
+evil-update.com
+
+↓
+
+185.24.10.55
+```
+
+You block the IP.
+
+Problem solved?
+
+Not necessarily.
+
+Within minutes the attacker changes the IP address.
+
+Now the same domain points to:
+
+```
+evil-update.com
+
+↓
+
+91.214.18.99
+```
+
+A few minutes later...
+
+```
+evil-update.com
+
+↓
+
+45.66.102.14
+```
+
+The domain never changes.
+
+Only the IP addresses do.
+
+This technique is known as **Fast Flux**.
+
+---
+
+# 💡 Real World Analogy
+
+Imagine police are trying to arrest a criminal.
+
+Every five minutes,
+
+the criminal moves to a different house.
+
+The criminal's phone number stays the same,
+
+but the address keeps changing.
+
+Eventually,
+
+finding and blocking the criminal becomes much more difficult.
+
+Fast Flux works exactly like this.
+
+The domain remains constant,
+
+while its IP address changes repeatedly.
+
+---
+
+# 🌍 How Fast Flux Works
+
+```
+Victim
+
+↓
+
+DNS Query
+
+↓
+
+evil-update.com
+
+↓
+
+DNS Response
+
+↓
+
+185.24.10.55
+```
+
+Five minutes later...
+
+```
+Victim
+
+↓
+
+DNS Query
+
+↓
+
+evil-update.com
+
+↓
+
+DNS Response
+
+↓
+
+91.214.18.99
+```
+
+Five minutes later...
+
+```
+Victim
+
+↓
+
+DNS Query
+
+↓
+
+evil-update.com
+
+↓
+
+DNS Response
+
+↓
+
+45.66.102.14
+```
+
+The attacker can rotate dozens or even hundreds of IP addresses in a single day.
+
+---
+
+# 🏢 Why Attackers Use Fast Flux
+
+Fast Flux makes malicious infrastructure more resilient.
+
+Benefits include:
+
+- Harder to block.
+- Harder to take down.
+- Increased availability.
+- Better resistance against blacklists.
+- Difficult attribution.
+
+Even if defenders block several IPs,
+
+new ones quickly replace them.
+
+---
+
+# 🦠 Real Malware Example
+
+Many botnets use infected computers as temporary servers.
+
+```
+Attacker
+
+↓
+
+Botnet
+
+↓
+
+Thousands of Infected PCs
+
+↓
+
+DNS Rotates Between Them
+```
+
+When defenders block one infected machine,
+
+another infected computer immediately replaces it.
+
+The malicious service remains online.
+
+---
+
+# 🔴 Red Team Perspective
+
+Threat actors use Fast Flux to protect:
+
+- Phishing websites.
+- Malware download servers.
+- Command & Control infrastructure.
+- Botnets.
+- Credential harvesting sites.
+
+Instead of relying on one server,
+
+they distribute services across many compromised hosts.
+
+---
+
+# 🔵 Blue Team Perspective
+
+SOC analysts should investigate domains that:
+
+- Resolve to many IP addresses.
+- Frequently change A records.
+- Have unusually short TTL values.
+- Use geographically scattered infrastructure.
+- Appear across multiple autonomous systems (ASNs).
+
+Rapid infrastructure changes often indicate malicious intent.
+
+---
+
+# 💼 Real SOC Investigation
+
+## Alert
+
+Threat Intelligence identifies:
+
+```
+secure-login-update.com
+```
+
+During investigation,
+
+DNS responses show:
+
+```
+09:00
+
+↓
+
+185.12.10.44
+```
+
+```
+09:10
+
+↓
+
+91.66.201.7
+```
+
+```
+09:20
+
+↓
+
+45.90.112.18
+```
+
+```
+09:30
+
+↓
+
+103.25.44.77
+```
+
+Within only thirty minutes,
+
+the same domain has resolved to four different IP addresses.
+
+Further investigation reveals dozens more IPs across multiple countries.
+
+The domain is confirmed to be part of a phishing campaign.
+
+---
+
+# ⏳ TTL - Time To Live
+
+One characteristic of Fast Flux is a **very low TTL (Time To Live).**
+
+TTL tells devices how long they should cache a DNS response.
+
+Example:
+
+```
+TTL
+
+↓
+
+30 Seconds
+```
+
+After 30 seconds,
+
+the client asks DNS again.
+
+The attacker now returns a completely different IP address.
+
+Short TTL values make IP rotation much faster.
+
+---
+
+# 📡 Typical DNS Pattern
+
+```
+DNS Query
+
+↓
+
+Domain
+
+↓
+
+IP #1
+
+↓
+
+30 Seconds Later
+
+↓
+
+DNS Query
+
+↓
+
+IP #2
+
+↓
+
+30 Seconds Later
+
+↓
+
+DNS Query
+
+↓
+
+IP #3
+```
+
+Repeated IP changes are a strong indicator that something unusual is happening.
+
+---
+
+# 🛡️ Detection Engineering
+
+Look for:
+
+- One domain resolving to many IP addresses.
+- Frequent A record changes.
+- Low TTL values.
+- IP addresses spread across multiple countries.
+- Infrastructure hosted on residential networks.
+- Domains associated with botnet activity.
+
+Fast Flux is easier to detect when DNS logs are combined with passive DNS and threat intelligence.
+
+---
+
+# 🚨 Detection Opportunities
+
+Investigate when:
+
+- A domain resolves to dozens of different IPs.
+- IP addresses change every few minutes.
+- The domain has a TTL of only a few seconds or minutes.
+- DNS activity is followed by suspicious HTTPS sessions.
+- The domain has recently appeared in phishing reports.
+
+---
+
+# ❌ Common Mistakes
+
+### Mistake 1
+
+"Multiple IP addresses always indicate Fast Flux."
+
+False.
+
+Large services such as Microsoft, Google, and Cloudflare also use multiple IP addresses for redundancy and load balancing.
+
+The difference is **how frequently** those IPs change and the overall behavior.
+
+---
+
+### Mistake 2
+
+"Blocking one IP stops the attack."
+
+False.
+
+Fast Flux is specifically designed to defeat IP-based blocking.
+
+Blocking should focus on the domain, infrastructure, or malicious activity—not just a single IP.
+
+---
+
+### Mistake 3
+
+"Low TTL always means malicious."
+
+False.
+
+Content Delivery Networks (CDNs) and cloud providers may legitimately use short TTL values.
+
+Always consider context before drawing conclusions.
+
+---
+
+# 🎯 MITRE ATT&CK Mapping
+
+| Activity | Technique |
+|-----------|-----------|
+| Dynamic Resolution | **T1568** |
+| DNS Command & Control | **T1071.004** |
+| Resource Development | **T1583** |
+
+---
+
+# 🧪 SOC Investigation Challenge
+
+## Scenario
+
+A suspicious domain is observed.
+
+```
+cdn-security-check.com
+
+↓
+
+09:00
+
+↓
+
+185.24.10.44
+```
+
+```
+09:05
+
+↓
+
+103.17.91.18
+```
+
+```
+09:10
+
+↓
+
+91.44.18.73
+```
+
+```
+TTL
+
+↓
+
+20 Seconds
+```
+
+### Investigation Questions
+
+1. Is this Fast Flux or legitimate load balancing?
+2. How many unique IP addresses has the domain used?
+3. Are the IPs associated with known malicious activity?
+4. Which endpoints contacted the domain?
+5. Are HTTPS sessions occurring immediately after DNS resolution?
+6. Does threat intelligence identify the domain?
+7. Is the infrastructure spread across multiple countries?
+8. What containment actions should be taken?
+
+---
+
+# ⚡ Quick Revision
+
+✅ Fast Flux keeps the domain name constant while rapidly changing IP addresses.
+
+✅ It is commonly used by phishing campaigns, botnets, and Command & Control infrastructure.
+
+✅ Low TTL values and frequent A record changes are key indicators.
+
+✅ Correlate DNS telemetry with passive DNS, firewall logs, EDR, and threat intelligence before making conclusions.
+
+# 🔗 Knowledge Connections
+
+Fast Flux
+      │
+      ├── DNS
+      ├── TTL
+      ├── A Records
+      ├── Command & Control
+      ├── Botnets
+      ├── Phishing
+      ├── Threat Hunting
+      ├── Threat Intelligence
+      ├── Passive DNS
+      └── MITRE ATT&CK
+
+---
+
+# 🕵️ Passive DNS (pDNS) - Looking Into a Domain's Past
+
+> **"A domain may change today, but Passive DNS remembers where it has been."**
+
+---
+
+# 🎯 Purpose
+
+When analysts investigate a suspicious domain,
+
+one of the first questions they ask is:
+
+> **"Has this domain been seen before?"**
+
+Normal DNS only tells us the **current** answer.
+
+Example:
+
+```
+malicious-domain.com
+
+↓
+
+203.0.113.25
+```
+
+But what if yesterday it pointed to:
+
+```
+91.12.55.80
+```
+
+Or last month it pointed to:
+
+```
+185.44.19.200
+```
+
+Normal DNS cannot answer those questions.
+
+Passive DNS can.
+
+---
+
+# 💡 Real World Analogy
+
+Imagine you're investigating a suspect.
+
+Knowing **where they live today** is useful.
+
+But knowing:
+
+- Where they lived last year
+- Who lived with them
+- Which vehicles they used
+- Who visited them
+
+provides a much clearer picture.
+
+Passive DNS works the same way.
+
+It records the historical relationships between domains and IP addresses.
+
+---
+
+# 🌍 What is Passive DNS?
+
+Passive DNS (pDNS) is a database of historical DNS observations.
+
+Instead of asking:
+
+```
+"What is the IP now?"
+```
+
+you ask:
+
+```
+"What IPs has this domain ever used?"
+```
+
+or
+
+```
+"What domains have used this IP?"
+```
+
+This historical data helps analysts uncover attacker infrastructure.
+
+---
+
+# 📚 What Information Can Passive DNS Provide?
+
+Depending on the data source, Passive DNS may reveal:
+
+- Historical IP addresses
+- Previous domain names
+- First seen date
+- Last seen date
+- Record types
+- Name servers
+- TTL history
+- Related domains
+- Shared infrastructure
+
+This information is extremely valuable during threat hunting and incident response.
+
+---
+
+# 🏢 Enterprise Example
+
+Your firewall blocks traffic to:
+
+```
+secure-login-update.xyz
+```
+
+Threat intelligence identifies it as suspicious.
+
+Passive DNS reveals:
+
+```
+Last Month
+
+↓
+
+185.24.18.55
+```
+
+↓
+
+```
+Two Weeks Ago
+
+↓
+
+91.204.18.22
+```
+
+↓
+
+```
+Yesterday
+
+↓
+
+45.77.199.88
+```
+
+You now know the attacker has changed infrastructure multiple times.
+
+---
+
+# 🔍 Reverse Passive DNS
+
+Passive DNS can also work in reverse.
+
+Instead of asking:
+
+```
+Domain
+
+↓
+
+IP
+```
+
+you ask:
+
+```
+IP
+
+↓
+
+All Domains Hosted
+```
+
+Example:
+
+```
+185.24.18.55
+
+↓
+
+login-update.xyz
+
+↓
+
+office-auth.xyz
+
+↓
+
+microsoft-secure.xyz
+
+↓
+
+vpn-company-login.xyz
+```
+
+Suddenly,
+
+you discover several phishing domains hosted on the same infrastructure.
+
+---
+
+# 🔴 Red Team Perspective
+
+Threat actors frequently:
+
+- Change IP addresses.
+- Register new domains.
+- Move to different hosting providers.
+- Rotate DNS records.
+
+However,
+
+historical Passive DNS data often preserves these relationships,
+
+making infrastructure analysis much easier for defenders.
+
+---
+
+# 🔵 Blue Team Perspective
+
+SOC analysts use Passive DNS to:
+
+- Investigate phishing domains.
+- Track attacker infrastructure.
+- Discover related malicious domains.
+- Build indicators of compromise (IOCs).
+- Enrich alerts.
+- Correlate incidents across campaigns.
+
+Passive DNS often transforms one suspicious domain into an entire malicious infrastructure map.
+
+---
+
+# 💼 Real SOC Investigation
+
+## Alert
+
+Firewall blocks:
+
+```
+invoice-storage-download.xyz
+```
+
+Threat Intelligence
+
+↓
+
+Unknown
+
+No previous detections.
+
+Passive DNS reveals:
+
+```
+Current IP
+
+↓
+
+91.22.44.18
+```
+
+Reverse lookup shows:
+
+```
+office365-security.xyz
+
+↓
+
+vpn-login-update.xyz
+
+↓
+
+microsoft-authentication.xyz
+
+↓
+
+sharepoint-secure.xyz
+```
+
+All four domains share the same infrastructure.
+
+The investigation expands from one suspicious domain to an entire phishing campaign.
+
+---
+
+# 🛡️ Detection Engineering
+
+Passive DNS is commonly used to enrich alerts.
+
+Example workflow:
+
+```
+DNS Alert
+
+↓
+
+Threat Intelligence
+
+↓
+
+Passive DNS
+
+↓
+
+WHOIS
+
+↓
+
+SSL Certificate Analysis
+
+↓
+
+Risk Score
+
+↓
+
+SOC Investigation
+```
+
+The additional context helps analysts prioritize investigations.
+
+---
+
+# 🧰 Common Passive DNS Platforms
+
+Analysts often use:
+
+- VirusTotal
+- SecurityTrails
+- RiskIQ / Microsoft Defender TI
+- Recorded Future
+- Cisco Umbrella Investigate
+- Farsight DNSDB
+- AlienVault OTX
+
+Each platform provides different historical datasets and enrichment capabilities.
+
+---
+
+# 🚨 Detection Opportunities
+
+Use Passive DNS to identify:
+
+- Domains sharing malicious infrastructure.
+- Fast Flux activity.
+- Infrastructure reused across campaigns.
+- Domains rapidly changing IP addresses.
+- Multiple phishing domains on the same server.
+- Historical connections to known malware.
+
+---
+
+# ❌ Common Mistakes
+
+### Mistake 1
+
+"Passive DNS replaces normal DNS."
+
+False.
+
+Normal DNS provides the **current** answer.
+
+Passive DNS provides the **historical** answers.
+
+Both are useful.
+
+---
+
+### Mistake 2
+
+"If two domains share an IP, both are malicious."
+
+False.
+
+Shared hosting environments may host thousands of unrelated websites.
+
+Always investigate further before drawing conclusions.
+
+---
+
+### Mistake 3
+
+"No Passive DNS history means the domain is safe."
+
+False.
+
+A newly registered domain may simply have no historical records yet.
+
+---
+
+# 🎯 MITRE ATT&CK Mapping
+
+Passive DNS itself is an investigation technique.
+
+It helps analysts investigate activity associated with:
+
+| Activity | Technique |
+|-----------|-----------|
+| Infrastructure Discovery | T1590 |
+| Resource Development | T1583 |
+| DNS Command & Control | T1071.004 |
+| Dynamic Resolution | T1568 |
+
+---
+
+# 🧪 SOC Investigation Challenge
+
+## Scenario
+
+EDR generates an alert.
+
+```
+Host
+
+↓
+
+FINANCE-PC-09
+
+↓
+
+Queried
+
+↓
+
+secure-payroll-check.xyz
+```
+
+Threat Intelligence
+
+↓
+
+No detections.
+
+Passive DNS reveals:
+
+```
+Current IP
+
+↓
+
+91.22.44.18
+```
+
+Historical Records:
+
+```
+185.33.18.7
+
+↓
+
+103.18.44.2
+
+↓
+
+91.22.44.18
+```
+
+Reverse Passive DNS shows:
+
+```
+vpn-office-login.xyz
+
+↓
+
+microsoft-auth-check.xyz
+
+↓
+
+onedrive-secure.xyz
+```
+
+### Investigation Questions
+
+1. How many domains share this infrastructure?
+2. Has the IP been associated with previous attacks?
+3. Are any domains impersonating trusted brands?
+4. Which endpoints contacted these domains?
+5. Are additional IOCs available?
+6. Should these domains be blocked proactively?
+7. Does this indicate a larger phishing campaign?
+8. Which logs should be correlated next?
+
+---
+
+# ⚡ Quick Revision
+
+✅ Passive DNS stores historical DNS observations.
+
+✅ It helps analysts investigate the history of domains and IP addresses.
+
+✅ Reverse Passive DNS identifies other domains hosted on the same infrastructure.
+
+✅ Passive DNS is invaluable during phishing, malware, and C2 investigations.
+
+# 🔗 Knowledge Connections
+
+Passive DNS
+      │
+      ├── DNS
+      ├── Threat Intelligence
+      ├── WHOIS
+      ├── Fast Flux
+      ├── DGA
+      ├── Phishing
+      ├── Command & Control
+      ├── IOC Enrichment
+      ├── Incident Response
+      └── MITRE ATT&CK
